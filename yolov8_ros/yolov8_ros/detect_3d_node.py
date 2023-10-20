@@ -13,7 +13,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from typing import Tuple
+
+import numpy as np
+from typing import Tuple, List
 
 import message_filters
 import numpy as np
@@ -69,46 +71,57 @@ class Detect3DNode(Node):
             (self.depth_sub, self.depth_info_sub, self.detections_sub), 10, 0.5)
         self._synchronizer.registerCallback(self.on_detections)
 
-    def on_detections(self,
-                      depth_msg: Image,
-                      depth_info_msg: CameraInfo,
-                      detections_msg: DetectionArray,
-                      ) -> None:
+    def on_detections(
+        self,
+        points_msg: PointCloud2,
+        detections_msg: DetectionArray,
+    ) -> None:
+
+        new_detections_msg = DetectionArray()
+        new_detections_msg.header = detections_msg.header
+        new_detections_msg.detections = self.process_detections(
+            points_msg, detections_msg)
+        self._pub.publish(new_detections_msg)
+
+    def process_detections(
+            self,
+            points_msg: PointCloud2,
+            detections_msg: DetectionArray
+    ) -> List[Detection]:
 
         # check if there are detections
         if not detections_msg.detections:
-            return
+            return []
 
         transform = self.get_transform(depth_info_msg.header.frame_id)
 
         if transform is None:
-            return
+            return []
 
-        depth_image = self.cv_bridge.imgmsg_to_cv2(depth_msg)
-        new_detections_msg = DetectionArray()
-        new_detections_msg.header = detections_msg.header
+        new_detections = []
+        points = np.frombuffer(points_msg.data, np.float32).reshape(
+            points_msg.height, points_msg.width, -1)[:, :, :3]
 
         for detection in detections_msg.detections:
             bbox3d = self.convert_bb_to_3d(
                 depth_image, depth_info_msg, detection)
 
             if bbox3d is not None:
-                new_detections_msg.detections.append(detection)
+                new_detections.append(detection)
 
                 bbox3d = Detect3DNode.transform_3d_box(
                     bbox3d, transform[0], transform[1])
                 bbox3d.frame_id = self.target_frame
-                new_detections_msg.detections[-1].bbox3d = bbox3d
+                new_detections[-1].bbox3d = bbox3d
 
-                if detection.keypoints.data:
-                    keypoints3d = self.convert_keypoints_to_3d(
-                        depth_image, depth_info_msg, detection)
-                    keypoints3d = Detect3DNode.transform_3d_keypoints(
-                        keypoints3d, transform[0], transform[1])
-                    keypoints3d.frame_id = self.target_frame
-                    new_detections_msg.detections[-1].keypoints3d = keypoints3d
+                keypoints3d = self.convert_keypoints_to_3d(
+                    points, detection)
+                keypoints3d = Detect3DNode.transform_3d_keypoints(
+                    keypoints3d, transform[0], transform[1])
+                keypoints3d.frame_id = self.target_frame
+                new_detections[-1].keypoints3d = keypoints3d
 
-        self._pub.publish(new_detections_msg)
+        return new_detections
 
     def convert_bb_to_3d(self,
                          depth_image: np.ndarray,
