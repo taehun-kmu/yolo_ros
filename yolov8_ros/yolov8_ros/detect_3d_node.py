@@ -14,8 +14,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-import numpy as np
-from typing import Tuple, List
+from typing import List, Tuple
 
 import message_filters
 import numpy as np
@@ -141,8 +140,9 @@ class Detect3DNode(Node):
             return None
 
         # find the z coordinate on the 3D BB
-        z_mean = np.nanmean(np.where(roi == 0, np.nan, roi))
-        z_diff = np.abs(roi - z_mean)
+        bb_center_z_coord = depth_image[int(center_y)][int(center_x)] / self.depth_image_units_divisor
+        z_diff = np.abs(roi - bb_center_z_coord)
+        mask_z = z_diff <= self.maximum_detection_threshold
         mask_z = z_diff <= self.maximum_detection_threshold
         if not np.any(mask_z):
             return None
