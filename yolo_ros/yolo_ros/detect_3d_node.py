@@ -196,8 +196,7 @@ class Detect3DNode(LifecycleNode):
             return []
 
         new_detections = []
-        points = np.frombuffer(points_msg.data, np.float32).reshape(
-            points_msg.height, points_msg.width, -1)[:, :, :3]
+        depth_image = self.cv_bridge.imgmsg_to_cv2(depth_msg, desired_encoding="bgr8")
 
         for detection in detections_msg.detections:
             bbox3d = self.convert_bb_to_3d(depth_image, depth_info_msg, detection)
