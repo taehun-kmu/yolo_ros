@@ -1,2 +1,17 @@
 .vscode
 __pycache__
+
+# Ignore model weights and artifacts
+*.pt
+*.pth
+*.onnx
+*.engine
+*.plan
+*.weights
+*.tflite
+*.mlmodel
+*.safetensors
+
+# Ignore local models directory (keep README only)
+/yolo_bringup/models/*
+!/yolo_bringup/models/README.md
