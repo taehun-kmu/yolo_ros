@@ -14,6 +14,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
+from ament_index_python.packages import get_package_share_directory
+from launch.substitutions import PathJoinSubstitution
+
 from launch import LaunchDescription, LaunchContext
 from launch.actions import DeclareLaunchArgument, OpaqueFunction
 from launch.substitutions import LaunchConfiguration, PythonExpression
@@ -42,6 +45,11 @@ def generate_launch_description():
             default_value="yolov8m.pt",
             description="Model name or path",
         )
+        model_path = PathJoinSubstitution([
+            get_package_share_directory("yolo_bringup"),
+            "models",
+            model
+        ])
 
         tracker = LaunchConfiguration("tracker")
         tracker_cmd = DeclareLaunchArgument(
@@ -234,7 +242,7 @@ def generate_launch_description():
             parameters=[
                 {
                     "model_type": model_type,
-                    "model": model,
+                    "model": model_path,
                     "device": device,
                     "yolo_encoding": yolo_encoding,
                     "enable": enable,
