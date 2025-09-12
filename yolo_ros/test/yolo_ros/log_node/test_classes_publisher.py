@@ -17,9 +17,9 @@ def test_log_node_does_not_republish_same_class_with_new_id():
     rclpy.init()
 
     # Import here to avoid initializing ROS 2 during collection time
-    from yolo_ros.log_node import DetectionLog  # noqa: WPS433
+    from yolo_ros.log_node import LogNode  # noqa: WPS433
 
-    log_node = DetectionLog()
+    log_node = LogNode()
     helper = Node("log_node_class_test_helper")
 
     received: List[str] = []
