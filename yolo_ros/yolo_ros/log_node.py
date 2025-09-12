@@ -39,33 +39,30 @@ class LogNode(Node):
             10,
         )
         self.classes_pub = self.create_publisher(String, '/yolo/classes', 10)
-        self.previous_ids = set()
-        self.published_classes = set()
+        self.previous_classes = set()
 
         self.get_logger().info('Listening to /yolo/detections...')
 
     def listener_callback(self, msg: DetectionArray) -> None:
         """Handle incoming detections and publish new classes once."""
-        current_ids = {detection.id for detection in msg.detections}
-        new_ids = current_ids - self.previous_ids
+        current_classes = {detection.class_name for detection in msg.detections}
+        new_classes = current_classes - self.previous_classes
 
-        if new_ids:
+        if new_classes:
             for detection in msg.detections:
-                if detection.id in new_ids:
-                    # Log any newly observed object IDs
-                    self.get_logger().info(
+                if detection.class_name in new_classes:
+                    # Log any newly observed object Classes
+                    log = (
                         f'New Object Detected - Class ID: {detection.class_id}, '
                         f'Class Name: {detection.class_name}, '
-                        f'Score: {detection.score:.2f} '
+                        f'Score: {detection.score:.2f}'
                     )
+                    # Log to console
+                    self.get_logger().info(log)
+                    # Publish the same log to /yolo/classes
+                    self.classes_pub.publish(String(data=log))
 
-                # Publish the class name only once globally (first time seen)
-                class_name = detection.class_name
-                if class_name and class_name not in self.published_classes:
-                    self.published_classes.add(class_name)
-                    self.classes_pub.publish(String(data=class_name))
-
-        self.previous_ids = current_ids
+        self.previous_classes = current_classes
 
 
 def main():
