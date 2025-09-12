@@ -15,14 +15,13 @@
 
 
 import rclpy
+
 from rclpy.node import Node
-
 from std_msgs.msg import String
-
 from yolo_msgs.msg import DetectionArray
 
 
-class DetectionLog(Node):
+class LogNode(Node):
     """
     Node that logs detections and publishes first-seen classes.
 
@@ -31,7 +30,8 @@ class DetectionLog(Node):
     """
 
     def __init__(self):
-        super().__init__('detection_log')
+        super().__init__('log_node', namespace='yolo')
+
         self.subscription = self.create_subscription(
             DetectionArray,
             '/yolo/detections',
@@ -41,6 +41,7 @@ class DetectionLog(Node):
         self.classes_pub = self.create_publisher(String, '/yolo/classes', 10)
         self.previous_ids = set()
         self.published_classes = set()
+
         self.get_logger().info('Listening to /yolo/detections...')
 
     def listener_callback(self, msg: DetectionArray) -> None:
@@ -69,7 +70,7 @@ class DetectionLog(Node):
 
 def main():
     rclpy.init()
-    node = DetectionLog()
+    node = LogNode()
     rclpy.spin(node)
     rclpy.shutdown()
 
